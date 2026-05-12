@@ -1,8 +1,6 @@
 # MacMonitor
 
-A .NET 10 worker service that periodically inspects a macOS host for malware indicators.
-Inspections run as allow-listed commands over **SSH to localhost**; results are diffed
-against a SQLite baseline and emitted as JSONL findings.
+A .NET worker service that runs in the background on macOS, periodically inspects the host for malware indicators, and uses an Anthropic Claude agent with tool use to triage findings. Inspections are executed by shelling out over **SSH to localhost** rather than running commands in-process.
 
 > **Status:** Phase 0 / Phase 1 / Phase 2 / Phase 3 / Phase 4 implemented. macOS
 > notifications fire on Medium+ findings; the Blazor Server web app at
