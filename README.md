@@ -210,5 +210,6 @@ rootkits, in-memory-only payloads, or attackers who already have root and can di
 the worker. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full discussion.
 
 ## License
+[MIT License](./LICENCSE.md) 
 
-MIT.
+Copyright (c) 2026 Pär Gradin
