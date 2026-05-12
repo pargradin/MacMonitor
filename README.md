@@ -1,36 +1,8 @@
 # MacMonitor
 
-A .NET worker service that runs in the background on macOS, periodically inspects the host for malware indicators, and uses an Anthropic Claude agent with tool use to triage findings. Inspections are executed by shelling out over **SSH to localhost** rather than running commands in-process.
+A .NET worker service that runs in the background on macOS, periodically inspects the host for malware indicators, and uses an Anthropic Claude agent with tool use to triage findings. Inspections are executed by shelling out over **SSH to localhost** rather than running commands in-process. 
 
-> **Status:** Phase 0 / Phase 1 / Phase 2 / Phase 3 / Phase 4 implemented. macOS
-> notifications fire on Medium+ findings; the Blazor Server web app at
-> `http://127.0.0.1:5050` has working filters / pagination on findings, mark-known-good
-> from the detail page, allow-list management, manual scan trigger with history, and a
-> 7-day cost chart. See [PHASE3.md](./PHASE3.md) and [PHASE4.md](./PHASE4.md) for
-> design details.
-
-## What it does today
-
-Every 15 minutes (configurable) the worker:
-
-1. Opens an SSH session to `127.0.0.1` using a dedicated key stored in the macOS Keychain.
-2. Runs four inspection tools, each backed by an allow-listed shell command:
-   - **list_processes** — `ps -axww`
-   - **list_launch_agents** — `find` over the four launchd plist scopes
-   - **network_connections** — `lsof -nP -iTCP -iUDP -F pcPnT`
-   - **recent_downloads** — `find ~/Downloads -mtime -30` + `xattr` for the quarantine flag
-3. Parses each output into typed records and stores a JSON snapshot in
-   `~/Library/Application Support/MacMonitor/state.db`.
-4. Diffs the new snapshot against the previous one, filters the result against the
-   user's `known_good` allow-list, and emits one finding per remaining change.
-5. Persists findings to SQLite and tails them out to the JSONL log
-   (`~/Library/Logs/MacMonitor/findings-YYYY-MM-DD.jsonl`).
-6. Closes the SSH session and applies retention (latest 5 snapshots per tool by default).
-
-The first scan of any tool emits a single `Info` baseline finding ("baseline established:
-N items") and stores the snapshot — no per-record noise on cold start.
-
-See [PHASE2.md](./PHASE2.md) for the diff strategy and severity matrix.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full overview.
 
 ## Requirements
 
@@ -85,6 +57,9 @@ dotnet run --project src/MacMonitor.Worker -- help
 
 A small Blazor Server app browses findings, manages the allow-list, and triggers scans
 on demand. Loopback only — `http://127.0.0.1:5050` — no auth.
+
+![alt text](webui.png)
+
 
 ```bash
 dotnet run --project src/MacMonitor.Web
@@ -236,4 +211,4 @@ the worker. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full discussion.
 
 ## License
 
-Pick one before you publish. Suggested: MIT.
+MIT.
