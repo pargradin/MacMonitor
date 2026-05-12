@@ -23,7 +23,7 @@ The rest of this document lays out the design choices and the phased build plan.
 
 | Decision | Choice |
 |---|---|
-| Runtime | .NET 8 (LTS) Worker Service on macOS |
+| Runtime | .NET 10 (LTS) Worker Service on macOS |
 | Inspection channel | SSH to `localhost` (sshd / Remote Login) |
 | AI backend | Anthropic Claude API, tool-use loop |
 | Scope | Single Mac, self-monitoring |

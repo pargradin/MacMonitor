@@ -35,7 +35,7 @@ See [PHASE2.md](./PHASE2.md) for the diff strategy and severity matrix.
 ## Requirements
 
 - macOS 13+ (any architecture)
-- .NET 8 SDK — `brew install dotnet@8` or download from <https://dotnet.microsoft.com/>
+- .NET 10 SDK — `brew install dotnet@10` or download from <https://dotnet.microsoft.com/>
 - Remote Login enabled (System Settings → General → Sharing → Remote Login)
 - Full Disk Access granted to `/usr/libexec/sshd-keygen-wrapper` (see install.sh output)
 
@@ -134,8 +134,8 @@ MacMonitor/
 ├── ARCHITECTURE.md                 # Design doc (read this first)
 ├── README.md                       # You are here
 ├── MacMonitor.sln
-├── Directory.Build.props           # Shared MSBuild settings (.net 8, nullable, warn-as-error)
-├── global.json                     # Pin SDK to 8.x
+├── Directory.Build.props           # Shared MSBuild settings (.net 10, nullable, warn-as-error)
+├── global.json                     # Pin SDK to 10.x
 ├── scripts/
 │   ├── install.sh                  # Keypair + Keychain + authorized_keys
 │   └── uninstall.sh
