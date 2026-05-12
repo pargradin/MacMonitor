@@ -8,7 +8,7 @@ A .NET worker service that runs in the background on macOS, periodically inspect
 
 Yes. Every piece of the stack exists today and runs natively on macOS:
 
-- .NET 8/9 background workers run fine on macOS via the Generic Host.
+- .NET 10 background workers run fine on macOS via the Generic Host.
 - `Renci.SshNet` is a mature SSH client for .NET; the macOS Remote Login service (sshd) is built in and toggled in System Settings → General → Sharing.
 - The Anthropic .NET SDK (or plain `HttpClient` against `api.anthropic.com`) supports the full tool-use loop with Claude.
 - All four inspection targets (processes, persistence, network, recent files) are reachable through standard macOS CLI tools (`ps`, `lsof`, `launchctl`, `codesign`, `mdfind`, `sqlite3` against the LaunchServices quarantine DB).
