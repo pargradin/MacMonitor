@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MacMonitor.Worker</RootNamespace>
+    <AssemblyName>MacMonitor</AssemblyName>
+    <UserSecretsId>macmonitor-worker</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-preview.3.26207.106" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="11.0.0-preview.3.26207.106" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MacMonitor.Core\MacMonitor.Core.csproj" />
+    <ProjectReference Include="..\MacMonitor.Ssh\MacMonitor.Ssh.csproj" />
+    <ProjectReference Include="..\MacMonitor.Tools\MacMonitor.Tools.csproj" />
+    <ProjectReference Include="..\MacMonitor.Alerts\MacMonitor.Alerts.csproj" />
+    <ProjectReference Include="..\MacMonitor.Storage\MacMonitor.Storage.csproj" />
+    <ProjectReference Include="..\MacMonitor.Agent\MacMonitor.Agent.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

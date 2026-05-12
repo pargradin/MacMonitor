@@ -1,0 +1,104 @@
+❯ ./scripts/install.sh
+==> Checking Keychain for existing item 'MacMonitor.SshKey'…
+==> Generating a new Ed25519 keypair (no passphrase)…
+==> Storing private key in Keychain as 'MacMonitor.SshKey'…
+    Stored.
+==> Installing the public key into /Users/pargradin/.ssh/authorized_keys…
+    Public key appended.
+
+==================================================================================
+ MacMonitor — manual steps you still need to do
+==================================================================================
+
+ 1. Enable Remote Login (sshd):
+       System Settings → General → Sharing → toggle "Remote Login" on.
+       Restrict access to the current user only.
+
+ 2. Grant Full Disk Access. The binary that needs it is sshd-keygen-wrapper:
+       System Settings → Privacy & Security → Full Disk Access → "+"
+       → ⌘⇧G → /usr/libexec/sshd-keygen-wrapper
+
+    Without this step, the recent_downloads tool will return zero results and
+    list_launch_agents will be missing user-scope plists.
+
+ 3. Set your username in src/MacMonitor.Worker/appsettings.json:
+       "Ssh": { "User": "pargradin", … }
+
+ 4. Smoke test:
+       dotnet run --project src/MacMonitor.Worker -- once
+
+    You should see one Info finding per tool printed and a JSONL file at
+    ~/Library/Logs/MacMonitor/findings-YYYY-MM-DD.jsonl.
+
+==================================================================================
+
+KUNDE INTE LÄSA CERTET. Körde igen
+Claude/Projects/MacMonitor via .NET v10.0.0 
+❯ ./scripts/install.sh
+==> Checking Keychain for existing item 'MacMonitor.SshKey'…
+==> Generating a new RSA-3072 keypair in PEM format (no passphrase)…
+==> Storing base64-encoded private key in Keychain as 'MacMonitor.SshKey'…
+    Stored.
+==> Installing the public key into /Users/pargradin/.ssh/authorized_keys…
+    Public key appended.
+
+==================================================================================
+ MacMonitor — manual steps you still need to do
+==================================================================================
+
+ 1. Enable Remote Login (sshd):
+       System Settings → General → Sharing → toggle "Remote Login" on.
+       Restrict access to the current user only.
+
+ 2. Grant Full Disk Access. The binary that needs it is sshd-keygen-wrapper:
+       System Settings → Privacy & Security → Full Disk Access → "+"
+       → ⌘⇧G → /usr/libexec/sshd-keygen-wrapper
+
+    Without this step, the recent_downloads tool will return zero results and
+    list_launch_agents will be missing user-scope plists.
+
+ 3. Set your username in src/MacMonitor.Worker/appsettings.json:
+       "Ssh": { "User": "pargradin", … }
+
+ 4. Seed the host key (first connection only):
+       ssh -o StrictHostKeyChecking=accept-new pargradin@127.0.0.1 true
+
+ 5. Smoke test:
+       dotnet run --project src/MacMonitor.Worker -- once
+
+    You should see one Info finding per tool printed and a JSONL file at
+    ~/Library/Logs/MacMonitor/findings-YYYY-MM-DD.jsonl.
+
+==================================================================================
+
+Claude/Projects/MacMonitor via .NET v10.0.0 
+❯ ssh -o StrictHostKeyChecking=accept-new $(whoami)@127.0.0.1 true 
+Warning: Permanently added '127.0.0.1' (ED25519) to the list of known hosts.
+(pargradin@127.0.0.1) Password:
+
+Claude/Projects/MacMonitor via .NET v10.0.0 took 9s 
+❯ dotnet run --project src/MacMonitor.Worker -- once
+
+info: MacMonitor.Worker.ScanOrchestrator[0]
+      Scan b9f164fd9d5a4126a1475037b5a787c1 starting.
+info: MacMonitor.Ssh.SshExecutor[0]
+      Connecting SSH to pargradin@127.0.0.1:22.
+info: MacMonitor.Tools.ListProcessesTool[0]
+      list_processes: parsed 945 processes in 429 ms.
+info: MacMonitor.Tools.ListLaunchAgentsTool[0]
+      list_launch_agents: parsed 492 plists in 289 ms.
+info: MacMonitor.Tools.NetworkConnectionsTool[0]
+      network_connections: parsed 121 endpoints in 290 ms.
+warn: MacMonitor.Ssh.SshExecutor[0]
+      SSH command recent-downloads exited 1: 
+info: MacMonitor.Tools.RecentDownloadsTool[0]
+      recent_downloads: parsed 0 files in 367 ms.
+warn: MacMonitor.Worker.ScanOrchestrator[0]
+      Tool recent_downloads warning: find/stat exited 1: 
+warn: MacMonitor.Worker.ScanOrchestrator[0]
+      Tool recent_downloads warning: No files returned. If you expected some, verify Full Disk Access is granted to sshd-keygen-wrapper.
+info: MacMonitor.Worker.ScanOrchestrator[0]
+      Scan b9f164fd9d5a4126a1475037b5a787c1 complete: 4 tools ran, 4 findings, 0 errors, 1853 ms.
+Scan b9f164fd9d5a4126a1475037b5a787c1 done in 1,9s. 4 tools, 4 findings, 0 errors.
+
+Claude/Projects/MacMonitor via .NET v10.0.0 took 13s 

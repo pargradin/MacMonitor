@@ -1,0 +1,204 @@
+@page "/findings"
+@rendermode InteractiveServer
+@using System.Text.RegularExpressions
+@inject IScanRepository Scans
+
+<h1>Findings</h1>
+
+<div class="filter-bar">
+    <label>
+        Severity ≥
+        <select @bind="_minSeverity" @bind:after="OnFilterChanged">
+            <option value="">Info</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+        </select>
+    </label>
+
+    <label>
+        Source
+        <select @bind="_source" @bind:after="OnFilterChanged">
+            <option value="">All</option>
+            <option value="list_processes">Processes</option>
+            <option value="list_launch_agents">Launch agents</option>
+            <option value="network_connections">Network</option>
+            <option value="recent_downloads">Downloads</option>
+        </select>
+    </label>
+
+    <label>
+        Time
+        <select @bind="_window" @bind:after="OnFilterChanged">
+            <option value="">All</option>
+            <option value="24h">Last 24h</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+        </select>
+    </label>
+
+    <label class="filter-search">
+        Search (regex)
+        <input class="input"
+               type="text"
+               placeholder="e.g.  zoom|launchagent  ·  192\.168\.  ·  ^/Users/.+\.dmg$"
+               @bind="_pattern"
+               @bind:event="oninput"
+               @onkeyup="OnSearchKey"
+               aria-invalid="@(_patternError is not null)" />
+    </label>
+
+    <label class="filter-search">
+        Exclude (regex)
+        <input class="input"
+               type="text"
+               placeholder="e.g.  microsoft|google  ·  com\.apple\."
+               @bind="_excludePattern"
+               @bind:event="oninput"
+               @onkeyup="OnSearchKey"
+               aria-invalid="@(_excludeError is not null)" />
+    </label>
+
+    <button class="btn btn-secondary" @onclick="Refresh">Refresh</button>
+</div>
+
+@if (_patternError is not null)
+{
+    <p class="error">Invalid search regex: @_patternError</p>
+}
+@if (_excludeError is not null)
+{
+    <p class="error">Invalid exclude regex: @_excludeError</p>
+}
+
+@if (_page is null)
+{
+    <p><em>Loading…</em></p>
+}
+else if (_page.Items.Count == 0)
+{
+    <p>No findings match this filter.</p>
+}
+else
+{
+    <p class="muted">
+        Showing @($"{_offset + 1}–{Math.Min(_offset + _page.Items.Count, _page.TotalCount)}")
+        of @_page.TotalCount.
+    </p>
+
+    @foreach (var f in _page.Items)
+    {
+        <FindingCard Finding="f" />
+    }
+
+    <div class="pager">
+        <button class="btn btn-secondary" disabled="@(_offset == 0)" @onclick="PrevPage">← Previous</button>
+        <span class="muted">Page @CurrentPage of @TotalPages</span>
+        <button class="btn btn-secondary" disabled="@(_offset + PageSize >= _page.TotalCount)" @onclick="NextPage">Next →</button>
+    </div>
+}
+
+@code {
+    private const int PageSize = 25;
+
+    private string _minSeverity = "";   // "" / Low / Medium / High
+    private string _source = "";        // "" / source name
+    private string _window = "";        // "" / 24h / 7d / 30d
+    private string _pattern = "";       // raw include-regex text
+    private string? _patternError;      // non-null when _pattern is invalid
+    private string _excludePattern = ""; // raw exclude-regex text
+    private string? _excludeError;      // non-null when _excludePattern is invalid
+    private int _offset = 0;
+    private FindingsPage? _page;
+
+    private int CurrentPage => (_offset / PageSize) + 1;
+    private int TotalPages => _page is null ? 1 : Math.Max(1, (int)Math.Ceiling(_page.TotalCount / (double)PageSize));
+
+    protected override Task OnInitializedAsync() => Refresh();
+
+    private async Task Refresh()
+    {
+        // Validate both regex fields client-side so an invalid pattern shows as an inline
+        // error rather than silently returning zero rows. Empty patterns = no filter.
+        _patternError = null;
+        _excludeError = null;
+        var sqlPattern = ValidateRegex(_pattern, ref _patternError);
+        var sqlExclude = ValidateRegex(_excludePattern, ref _excludeError);
+        if (_patternError is not null || _excludeError is not null)
+        {
+            _page = new FindingsPage(Array.Empty<Finding>(), 0);
+            return;
+        }
+
+        var filter = new FindingsFilter(
+            Limit: PageSize,
+            Offset: _offset,
+            MinSeverity: ParseSeverity(_minSeverity),
+            Source: string.IsNullOrEmpty(_source) ? null : _source,
+            SinceUtc: ParseSince(_window),
+            UntilUtc: null,
+            Pattern: sqlPattern,
+            ExcludePattern: sqlExclude);
+        _page = await Scans.QueryFindingsAsync(filter, default);
+    }
+
+    /// <summary>
+    /// Returns the input pattern unchanged if it's a valid .NET regex (or null/empty),
+    /// or null + sets <paramref name="error"/> when invalid. Mutates <paramref name="error"/>
+    /// via ref so we can validate two fields in one place without two return values.
+    /// </summary>
+    private static string? ValidateRegex(string raw, ref string? error)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        try
+        {
+            _ = new Regex(raw, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            return raw;
+        }
+        catch (ArgumentException ex)
+        {
+            error = ex.Message;
+            return null;
+        }
+    }
+
+    private async Task OnFilterChanged()
+    {
+        _offset = 0;
+        await Refresh();
+    }
+
+    private async Task OnSearchKey(KeyboardEventArgs e)
+    {
+        // Submit on Enter; ignore other keys so we don't fire one query per keystroke.
+        if (e.Key == "Enter")
+        {
+            _offset = 0;
+            await Refresh();
+        }
+    }
+
+    private async Task PrevPage()
+    {
+        _offset = Math.Max(0, _offset - PageSize);
+        await Refresh();
+    }
+
+    private async Task NextPage()
+    {
+        _offset += PageSize;
+        await Refresh();
+    }
+
+    private static Severity? ParseSeverity(string value) =>
+        Enum.TryParse<Severity>(value, ignoreCase: true, out var sev) ? sev : null;
+
+    private static DateTimeOffset? ParseSince(string window) =>
+        window switch
+        {
+            "24h" => DateTimeOffset.UtcNow.AddHours(-24),
+            "7d" => DateTimeOffset.UtcNow.AddDays(-7),
+            "30d" => DateTimeOffset.UtcNow.AddDays(-30),
+            _ => null,
+        };
+}

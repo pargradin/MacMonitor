@@ -1,0 +1,10 @@
+@page "/"
+@inject NavigationManager Nav
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Index → Findings; the findings page is the de-facto home.
+        Nav.NavigateTo("/findings", replace: true);
+    }
+}

@@ -1,0 +1,113 @@
+@page "/allow-list"
+@rendermode InteractiveServer
+@inject IKnownGoodRepository KnownGood
+
+<h1>Allow-list</h1>
+
+<p class="muted">
+    Items here are suppressed from findings even when they appear in a diff. Add by tool name + identity key.
+</p>
+
+<details class="add-form">
+    <summary>Add manually</summary>
+    <EditForm Model="this" OnValidSubmit="AddEntry">
+        <label>
+            Tool
+            <select class="input" @bind="_addTool">
+                <option value="list_processes">list_processes</option>
+                <option value="list_launch_agents">list_launch_agents</option>
+                <option value="network_connections">network_connections</option>
+                <option value="recent_downloads">recent_downloads</option>
+            </select>
+        </label>
+        <label>
+            Identity key
+            <input class="input" @bind="_addIdentity" placeholder="e.g., /Library/LaunchAgents/com.zoom.us.plist" />
+        </label>
+        <label>
+            Note (optional)
+            <input class="input" @bind="_addNote" />
+        </label>
+        <button class="btn" type="submit" disabled="@string.IsNullOrWhiteSpace(_addIdentity)">Add</button>
+        @if (!string.IsNullOrEmpty(_addError))
+        {
+            <p class="error">@_addError</p>
+        }
+    </EditForm>
+</details>
+
+@if (_entries is null)
+{
+    <p><em>Loading…</em></p>
+}
+else if (_entries.Count == 0)
+{
+    <p>No entries. Mark a finding as known-good from its detail page, or add manually above.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Added</th><th>Tool</th><th>Identity</th><th>Note</th><th></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var e in _entries)
+        {
+            <tr>
+                <td>@e.AddedAt.LocalDateTime.ToString("u")</td>
+                <td>@e.ToolName</td>
+                <td><code>@e.IdentityKey</code></td>
+                <td>@e.Note</td>
+                <td>
+                    <button class="btn btn-secondary btn-small" @onclick="() => Remove(e)">Remove</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<KnownGoodEntry>? _entries;
+
+    private string _addTool = "list_launch_agents";
+    private string _addIdentity = string.Empty;
+    private string _addNote = string.Empty;
+    private string? _addError;
+
+    protected override Task OnInitializedAsync() => Reload();
+
+    private async Task Reload()
+    {
+        _entries = await KnownGood.ListAsync(toolName: null, default);
+    }
+
+    private async Task AddEntry()
+    {
+        _addError = null;
+        if (string.IsNullOrWhiteSpace(_addIdentity))
+        {
+            _addError = "Identity key is required.";
+            return;
+        }
+        try
+        {
+            await KnownGood.AddAsync(
+                new KnownGoodEntry(_addTool, _addIdentity.Trim(), string.IsNullOrWhiteSpace(_addNote) ? null : _addNote.Trim(), DateTimeOffset.UtcNow),
+                default);
+            _addIdentity = string.Empty;
+            _addNote = string.Empty;
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            _addError = ex.Message;
+        }
+    }
+
+    private async Task Remove(KnownGoodEntry entry)
+    {
+        await KnownGood.RemoveAsync(entry.ToolName, entry.IdentityKey, default);
+        await Reload();
+    }
+}

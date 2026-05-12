@@ -1,0 +1,163 @@
+/* MacMonitor — minimal hand-written styles. No framework. */
+
+:root {
+    --bg: #fafafa;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e0e0e0;
+    --link: #0b6cdc;
+    --sev-info: #6b7280;
+    --sev-low: #2563eb;
+    --sev-medium: #d97706;
+    --sev-high: #dc2626;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.page { display: flex; flex-direction: column; min-height: 100vh; }
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+}
+
+.brand { font-weight: 600; font-size: 16px; }
+
+.nav { display: flex; gap: 16px; }
+.nav-link { color: var(--fg); padding: 4px 8px; border-radius: 4px; }
+.nav-link.active { background: #eef4ff; color: var(--link); }
+
+.content { padding: 24px; flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; }
+
+.footer {
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+}
+
+h1 { font-size: 20px; margin: 0 0 16px; }
+h2 { font-size: 16px; margin: 16px 0 8px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.table th { background: #f4f4f4; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+
+pre { background: #1e1e1e; color: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+
+.btn {
+    background: var(--link);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn:disabled { opacity: 0.5; cursor: wait; }
+
+.error { color: var(--sev-high); }
+
+.severity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+}
+.severity-info { background: var(--sev-info); }
+.severity-low { background: var(--sev-low); }
+.severity-medium { background: var(--sev-medium); }
+.severity-high { background: var(--sev-high); }
+
+.finding-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #fff;
+}
+.finding-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.finding-summary { font-size: 14px; }
+
+.severity-bg-info { border-left: 3px solid var(--sev-info); }
+.severity-bg-low { border-left: 3px solid var(--sev-low); }
+.severity-bg-medium { border-left: 3px solid var(--sev-medium); }
+.severity-bg-high { border-left: 3px solid var(--sev-high); }
+
+/* Findings page — filter bar */
+.filter-bar {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.filter-bar label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.filter-bar select, .filter-bar input {
+    background: #fff; border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; font-size: 13px;
+}
+
+.muted { color: var(--muted); font-size: 12px; }
+.error { color: var(--sev-high); font-size: 13px; }
+
+/* Findings page — pager */
+.pager { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
+
+/* Findings page — search box (wider than the dropdowns) */
+.filter-search { flex: 1; min-width: 240px; }
+.filter-search input { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.filter-search input[aria-invalid="true"] { border-color: var(--sev-high); }
+
+/* Buttons */
+.btn-secondary {
+    background: #fff;
+    color: var(--fg);
+    border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: #f4f4f4; }
+.btn-small { font-size: 12px; padding: 4px 8px; }
+
+/* Inputs */
+.input {
+    width: 100%; max-width: 480px;
+    background: #fff; border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; font-size: 13px;
+    margin-top: 4px;
+}
+form label { display: block; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+
+.add-form summary { cursor: pointer; padding: 8px 0; font-weight: 500; }
+.add-form { margin-bottom: 16px; }
+
+/* Scan status pill */
+.status {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+}
+.status-running { background: #e0e7ff; color: #3730a3; }
+.status-ok { background: #dcfce7; color: #166534; }
+.status-partial { background: #fef3c7; color: #92400e; }
+
+/* Cost chart */
+.cost-chart { display: block; max-width: 100%; height: auto; margin: 8px 0 24px; }

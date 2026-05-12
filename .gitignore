@@ -1,0 +1,25 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.lock.json
+
+## macOS
+.DS_Store
+
+## Logs
+*.log
+findings*.jsonl
+
+## Local secrets (should be in Keychain anyway)
+*.pem
+*.key
+appsettings.Local.json
+appsettings.Development.json
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp

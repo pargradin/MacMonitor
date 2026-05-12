@@ -1,0 +1,22 @@
+@* Reusable row-level summary. Phase-4 impl will replace the table on /findings with a
+   stack of these cards, and the FindingDetail page will use a fuller variant at top. *@
+
+@if (Finding is null)
+{
+    <p><em>(no finding)</em></p>
+}
+else
+{
+    <div class="finding-card severity-bg-@(Finding.Severity.ToString().ToLowerInvariant())">
+        <div class="finding-meta">
+            <SeverityBadge Severity="Finding.Severity" />
+            <span class="finding-source">@Finding.Source</span>
+            <span class="finding-when">@Finding.CreatedAt.LocalDateTime.ToString("u")</span>
+        </div>
+        <div class="finding-summary"><a href="@($"/findings/{Finding.Id}")">@Finding.Summary</a></div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Finding? Finding { get; set; }
+}

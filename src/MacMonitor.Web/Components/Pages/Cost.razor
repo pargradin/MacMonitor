@@ -1,0 +1,86 @@
+@page "/cost"
+@rendermode InteractiveServer
+@inject ICostLedger Ledger
+
+<h1>Cost</h1>
+
+@if (_budget is null)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <p>
+        <strong>Today (UTC @_budget.DayUtc.ToString("yyyy-MM-dd")):</strong>
+        $@_budget.SpentUsd.ToString("F4") / $@_budget.CapUsd.ToString("F2")
+        (remaining $@_budget.RemainingUsd.ToString("F4"))
+    </p>
+    @if (_budget.IsExhausted)
+    {
+        <p class="error">Daily cap reached — agent triage paused for the day.</p>
+    }
+
+    <h2>Last 7 days</h2>
+    <CostBarChart Data="_recent" CapUsd="_budget.CapUsd" />
+}
+
+<h2>Recent API calls</h2>
+
+@if (_calls is null)
+{
+    <p><em>Loading…</em></p>
+}
+else if (_calls.Count == 0)
+{
+    <p>No API calls recorded yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>Model</th>
+                <th>In</th>
+                <th>Out</th>
+                <th>Cache R</th>
+                <th>Cache W</th>
+                <th>Cost</th>
+                <th>Scan</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in _calls)
+        {
+            <tr>
+                <td>@c.OccurredAt.LocalDateTime.ToString("u")</td>
+                <td><code>@c.Model</code></td>
+                <td>@c.InputTokens.ToString("N0")</td>
+                <td>@c.OutputTokens.ToString("N0")</td>
+                <td>@c.CacheReadInputTokens.ToString("N0")</td>
+                <td>@c.CacheCreationInputTokens.ToString("N0")</td>
+                <td>$@c.CostUsd.ToString("F4")</td>
+                <td>
+                    @if (c.ScanId is not null)
+                    {
+                        <code>@c.ScanId[..8]</code>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private AgentBudget? _budget;
+    private IReadOnlyList<DailySpend>? _recent;
+    private IReadOnlyList<AgentUsage>? _calls;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _budget = await Ledger.GetBudgetAsync(default);
+        _recent = await Ledger.GetRecentSpendAsync(7, default);
+        _calls = await Ledger.GetRecentCallsAsync(50, default);
+    }
+}

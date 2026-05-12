@@ -1,0 +1,6 @@
+@* Tiny coloured pill for Severity. Color comes from a CSS class in app.css. *@
+<span class="severity severity-@(Severity.ToString().ToLowerInvariant())">@Severity</span>
+
+@code {
+    [Parameter, EditorRequired] public Severity Severity { get; set; }
+}

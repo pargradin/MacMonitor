@@ -1,0 +1,36 @@
+@* Pretty-prints the Finding.Evidence JSON. Phase-4 impl will add a collapsible toggle
+   and syntax-highlight the keys; for now it's a plain <pre>. *@
+@using System.Text.Json
+
+@if (Evidence is null)
+{
+    <p><em>(no evidence)</em></p>
+}
+else
+{
+    <details open>
+        <summary>Evidence</summary>
+        <pre><code>@Pretty</code></pre>
+    </details>
+}
+
+@code {
+    [Parameter] public object? Evidence { get; set; }
+
+    private string Pretty
+    {
+        get
+        {
+            if (Evidence is null) return string.Empty;
+            try
+            {
+                return JsonSerializer.Serialize(Evidence, Evidence.GetType(),
+                    new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                return Evidence.ToString() ?? string.Empty;
+            }
+        }
+    }
+}

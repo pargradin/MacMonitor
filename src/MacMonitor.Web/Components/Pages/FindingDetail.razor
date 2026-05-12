@@ -1,0 +1,155 @@
+@page "/findings/{Id}"
+@rendermode InteractiveServer
+@inject IScanRepository Scans
+@inject IKnownGoodRepository KnownGood
+@inject IJSRuntime Js
+@inject NavigationManager Nav
+
+<h1>Finding</h1>
+
+@if (_finding is null)
+{
+    <p><em>@_loadStatus</em></p>
+}
+else
+{
+    <p class="muted">
+        @_finding.CreatedAt.LocalDateTime.ToString("u") · scan
+        <a href="@($"/findings?source={_finding.Source}")" class="muted">@_finding.ScanId[..8]…</a>
+    </p>
+    <h2>
+        <SeverityBadge Severity="_finding.Severity" />
+        @_finding.Source
+    </h2>
+    <p>@_finding.Summary</p>
+
+    @if (!string.IsNullOrWhiteSpace(_finding.Rationale))
+    {
+        <h3>Agent rationale</h3>
+        <p>@_finding.Rationale</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_finding.RecommendedAction)
+         && !string.Equals(_finding.RecommendedAction, "none", StringComparison.OrdinalIgnoreCase))
+    {
+        <h3>Recommended action <button class="btn btn-secondary btn-small" @onclick="CopyAction">Copy</button></h3>
+        <pre><code>@_finding.RecommendedAction</code></pre>
+        @if (_copied)
+        {
+            <p class="muted">Copied to clipboard.</p>
+        }
+    }
+
+    <h3>Evidence</h3>
+    <EvidencePanel Evidence="_finding.Evidence" />
+
+    <h3>Mark as known-good</h3>
+    @if (_alreadyAllowed)
+    {
+        <p>This identity is already in the allow-list.
+           <a href="/allow-list">Manage</a></p>
+    }
+    else if (string.IsNullOrEmpty(_identityKey))
+    {
+        <p class="muted">No identity key on this finding (baseline finding); cannot allow-list.</p>
+    }
+    else
+    {
+        <EditForm Model="this" OnValidSubmit="MarkKnownGood">
+            <p class="muted">
+                Tool: <code>@_finding.Source</code><br />
+                Identity: <code>@_identityKey</code>
+            </p>
+            <label>
+                Note (optional)
+                <input class="input" @bind="_note" placeholder="e.g., Zoom auto-updater" />
+            </label>
+            <button class="btn" type="submit">Mark known-good</button>
+        </EditForm>
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <p class="error">@_error</p>
+        }
+    }
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+
+    private Finding? _finding;
+    private string _loadStatus = "Loading…";
+    private string _identityKey = string.Empty;
+    private string _note = string.Empty;
+    private bool _alreadyAllowed;
+    private bool _copied;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Id))
+        {
+            _loadStatus = "No finding id supplied.";
+            return;
+        }
+        _finding = await Scans.GetFindingByIdAsync(Id, default);
+        if (_finding is null)
+        {
+            _loadStatus = $"No finding with id {Id}.";
+            return;
+        }
+        _identityKey = ExtractIdentityKey(_finding.Evidence);
+        if (_identityKey.Length > 0)
+        {
+            _alreadyAllowed = await KnownGood.IsKnownGoodAsync(_finding.Source, _identityKey, default);
+        }
+    }
+
+    private async Task MarkKnownGood()
+    {
+        if (_finding is null || _identityKey.Length == 0) return;
+        try
+        {
+            await KnownGood.AddAsync(
+                new KnownGoodEntry(_finding.Source, _identityKey, string.IsNullOrWhiteSpace(_note) ? null : _note, DateTimeOffset.UtcNow),
+                default);
+            _alreadyAllowed = true;
+            _error = null;
+            // Stay on the page so the user can confirm; surface a link to the manager.
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task CopyAction()
+    {
+        if (string.IsNullOrEmpty(_finding?.RecommendedAction)) return;
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", _finding.RecommendedAction);
+            _copied = true;
+        }
+        catch
+        {
+            // Older browsers / restricted contexts may not allow this — fail silently.
+        }
+    }
+
+    private static string ExtractIdentityKey(object? evidence)
+    {
+        if (evidence is null) return string.Empty;
+        // Most findings persisted via the orchestrator have evidence as a JsonElement (post DB round-trip).
+        if (evidence is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            if (je.TryGetProperty("identity", out var prop) && prop.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return prop.GetString() ?? string.Empty;
+            }
+            return string.Empty;
+        }
+        // Fallback for in-memory anonymous types (used pre-persist).
+        var info = evidence.GetType().GetProperty("identity");
+        return info?.GetValue(evidence) as string ?? string.Empty;
+    }
+}

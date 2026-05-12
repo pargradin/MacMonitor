@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MacMonitor.Web</RootNamespace>
+    <AssemblyName>MacMonitor.Web</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MacMonitor.Core\MacMonitor.Core.csproj" />
+    <ProjectReference Include="..\MacMonitor.Ssh\MacMonitor.Ssh.csproj" />
+    <ProjectReference Include="..\MacMonitor.Tools\MacMonitor.Tools.csproj" />
+    <ProjectReference Include="..\MacMonitor.Alerts\MacMonitor.Alerts.csproj" />
+    <ProjectReference Include="..\MacMonitor.Storage\MacMonitor.Storage.csproj" />
+    <ProjectReference Include="..\MacMonitor.Agent\MacMonitor.Agent.csproj" />
+    <ProjectReference Include="..\MacMonitor.Worker\MacMonitor.Worker.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

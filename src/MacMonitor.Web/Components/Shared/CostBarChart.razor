@@ -1,0 +1,62 @@
+@* Inline-SVG bar chart of the last N days of spend. No JS, no chart library. *@
+
+@if (Data is null || Data.Count == 0)
+{
+    <p class="muted">(no data)</p>
+}
+else
+{
+    <svg class="cost-chart" viewBox="0 0 @Width @Height" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daily spend chart">
+        @{
+            var max = Data.Max(d => (double)d.SpentUsd);
+            if (max <= 0) max = 0.01; // avoid divide-by-zero; tiny non-zero ensures axis renders
+            var n = Data.Count;
+            var slot = (Width - 2 * PaddingX) / (double)n;
+            var barWidth = slot * 0.7;
+            var barOffset = (slot - barWidth) / 2;
+
+            // Cap line if cap is reasonable (otherwise it'd swallow the bars).
+            var capLineY = CapUsd > 0 && (double)CapUsd <= max * 1.5
+                ? Height - PaddingBottom - ((double)CapUsd / max) * (Height - PaddingBottom - PaddingTop)
+                : -1;
+        }
+
+        @* Axis baseline *@
+        <line x1="@PaddingX" y1="@(Height - PaddingBottom)" x2="@(Width - PaddingX)" y2="@(Height - PaddingBottom)"
+              stroke="#cbd5e1" stroke-width="1" />
+
+        @if (capLineY > 0)
+        {
+            <line x1="@PaddingX" y1="@(capLineY.ToString("F1"))" x2="@(Width - PaddingX)" y2="@(capLineY.ToString("F1"))"
+                  stroke="#dc2626" stroke-width="1" stroke-dasharray="4 3" opacity="0.7" />
+            @:<text x="@(Width - PaddingX - 4)" y="@((capLineY - 4).ToString("F1"))" text-anchor="end" font-size="9" fill="#dc2626">cap $@CapUsd.ToString("F2")</text>
+        }
+
+        @for (var i = 0; i < n; i++)
+        {
+            var d = Data[i];
+            var v = (double)d.SpentUsd;
+            var h = v / max * (Height - PaddingBottom - PaddingTop);
+            var x = PaddingX + i * slot + barOffset;
+            var y = Height - PaddingBottom - h;
+            var fill = (CapUsd > 0 && d.SpentUsd >= CapUsd) ? "#dc2626" : "#0b6cdc";
+
+            <rect x="@x.ToString("F1")" y="@y.ToString("F1")" width="@barWidth.ToString("F1")" height="@h.ToString("F1")"
+                  fill="@fill" rx="2" ry="2">
+                <title>@d.DayUtc.ToString("yyyy-MM-dd"): $@d.SpentUsd.ToString("F4")</title>
+            </rect>
+            @:<text x="@((x + barWidth / 2).ToString("F1"))" y="@(Height - PaddingBottom + 12)"text-anchor="middle" font-size="9" fill="#6b7280">@d.DayUtc.ToString("MM-dd")</text>
+        }
+    </svg>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DailySpend>? Data { get; set; }
+    [Parameter] public decimal CapUsd { get; set; }
+    [Parameter] public int Width { get; set; } = 480;
+    [Parameter] public int Height { get; set; } = 140;
+
+    private const int PaddingX = 12;
+    private const int PaddingTop = 12;
+    private const int PaddingBottom = 24;
+}

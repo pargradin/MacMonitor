@@ -1,0 +1,109 @@
+@page "/scan"
+@rendermode InteractiveServer
+@inject MacMonitor.Worker.ScanOrchestrator Orchestrator
+@inject IScanRepository Scans
+
+<h1>Scan</h1>
+
+<p class="muted">
+    Triggers a scan run from this process. The worker daemon (if running) is unaffected;
+    both can scan independently. Live progress streaming is a future enhancement —
+    for now this awaits the run and shows the result.
+</p>
+
+<button class="btn" disabled="@_running" @onclick="RunScan">
+    @(_running ? "Running scan…" : "Run scan now")
+</button>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <p class="error">Error: @_error</p>
+}
+
+@if (_lastResult is not null)
+{
+    <p>
+        <strong>@_lastResult.ScanId[..8]…</strong>
+        finished in @_lastResult.Duration.TotalSeconds.ToString("F1")s with
+        @_lastResult.Findings.Count finding(s) and @_lastResult.Errors.Count error(s).
+    </p>
+}
+
+<h2>Recent scans</h2>
+
+@if (_recent is null)
+{
+    <p><em>Loading…</em></p>
+}
+else if (_recent.Count == 0)
+{
+    <p>No scans recorded yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Scan</th>
+                <th>Started</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Findings</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var s in _recent)
+        {
+            <tr>
+                <td><code>@s.ScanId[..8]</code></td>
+                <td>@s.StartedAt.LocalDateTime.ToString("u")</td>
+                <td>@FormatDuration(s)</td>
+                <td>
+                    <span class="status status-@s.Status">@s.Status</span>
+                </td>
+                <td>@s.FindingsCount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool _running;
+    private ScanResult? _lastResult;
+    private string? _error;
+    private IReadOnlyList<ScanSummary>? _recent;
+
+    protected override Task OnInitializedAsync() => LoadRecent();
+
+    private async Task LoadRecent()
+    {
+        _recent = await Scans.GetRecentScansAsync(15, default);
+    }
+
+    private async Task RunScan()
+    {
+        _running = true;
+        _error = null;
+        try
+        {
+            _lastResult = await Orchestrator.RunOnceAsync(default);
+            await LoadRecent();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private static string FormatDuration(ScanSummary s)
+    {
+        if (s.CompletedAt is not { } completed) return "running…";
+        var delta = completed - s.StartedAt;
+        return $"{delta.TotalSeconds:F1}s";
+    }
+}
